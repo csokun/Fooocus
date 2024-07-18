@@ -24,7 +24,7 @@ services:
       - default_save_metadata_to_images=True
     volumes:
       - ./data:/app/data
-      - ./models:/app/models   # Once you import files, you don't need to mount again.
+      - ../models:/app/models # Once you import files, you don't need to mount again.
       - ./outputs:/app/outputs
     tty: true
     deploy:

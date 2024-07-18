@@ -20,12 +20,6 @@ RUN curl -fsL -o /usr/local/lib/python3.10/dist-packages/gradio/frpc_linux_amd64
 
 WORKDIR /app
 COPY entrypoint.sh /app
-
 COPY . /app
 
-WORKDIR /content
-USER user
-
-COPY . /content/app
-
-CMD [ "sh", "-c", "/content/entrypoint.sh ${CMDARGS}" ]
+CMD [ "sh", "-c", "/app/entrypoint.sh ${CMDARGS}" ]
