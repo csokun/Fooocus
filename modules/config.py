@@ -209,7 +209,7 @@ def get_config_item_or_set_default(key, default_value, validator, disable_empty_
 
     if key not in visited_keys:
         visited_keys.append(key)
-    
+
     v = os.getenv(key)
     if v is not None:
         v = try_eval_env_var(v, expected_type)
