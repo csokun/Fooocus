@@ -37,6 +37,7 @@ def patched_wait_for(fut, timeout):
 
 gradio.routes.asyncio.wait_for = patched_wait_for
 
+from gradio.events import Dependency
 
 class Image(gr.Image):
     """
@@ -103,3 +104,7 @@ class Image(gr.Image):
             show_share_button=show_share_button,
             **kwargs,
         )
+    from typing import Callable, Literal, Sequence, Any, TYPE_CHECKING
+    from gradio.blocks import Block
+    if TYPE_CHECKING:
+        from gradio.components import Timer

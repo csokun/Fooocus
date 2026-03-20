@@ -855,12 +855,34 @@ def worker():
         if (async_task.current_tab == 'inpaint' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_inpaint)) \
                 and isinstance(async_task.inpaint_input_image, dict):
-            inpaint_image = async_task.inpaint_input_image['image']
-            inpaint_mask = async_task.inpaint_input_image['mask'][:, :, 0]
+            # Support Gradio 4.x ImageEditor format (background/layers/composite)
+            if 'background' in async_task.inpaint_input_image:
+                inpaint_image = async_task.inpaint_input_image['background']
+                layers = async_task.inpaint_input_image.get('layers', [])
+                if layers and layers[0] is not None and isinstance(layers[0], np.ndarray) \
+                        and layers[0].ndim == 3 and layers[0].shape[2] == 4:
+                    inpaint_mask = layers[0][:, :, 3]
+                else:
+                    inpaint_mask = np.zeros(inpaint_image.shape[:2], dtype=np.uint8) \
+                        if isinstance(inpaint_image, np.ndarray) else None
+            else:
+                inpaint_image = async_task.inpaint_input_image['image']
+                inpaint_mask = async_task.inpaint_input_image['mask'][:, :, 0]
 
             if async_task.inpaint_advanced_masking_checkbox:
                 if isinstance(async_task.inpaint_mask_image_upload, dict):
-                    if (isinstance(async_task.inpaint_mask_image_upload['image'], np.ndarray)
+                    if 'background' in async_task.inpaint_mask_image_upload:
+                        # Gradio 4.x ImageEditor format for mask upload
+                        layers = async_task.inpaint_mask_image_upload.get('layers', [])
+                        if layers and layers[0] is not None and isinstance(layers[0], np.ndarray) \
+                                and layers[0].ndim == 3 and layers[0].shape[2] == 4:
+                            alpha = layers[0][:, :, 3]
+                            async_task.inpaint_mask_image_upload = np.stack([alpha] * 3, axis=2)
+                        else:
+                            composite = async_task.inpaint_mask_image_upload.get('composite')
+                            bg = async_task.inpaint_mask_image_upload.get('background')
+                            async_task.inpaint_mask_image_upload = composite if composite is not None else bg
+                    elif (isinstance(async_task.inpaint_mask_image_upload['image'], np.ndarray)
                             and isinstance(async_task.inpaint_mask_image_upload['mask'], np.ndarray)
                             and async_task.inpaint_mask_image_upload['image'].ndim == 3):
                         async_task.inpaint_mask_image_upload = np.maximum(
