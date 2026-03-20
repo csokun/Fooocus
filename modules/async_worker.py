@@ -843,7 +843,7 @@ def worker():
         return current_progress
 
     def extract_mask_from_image_editor_layers(layers):
-        """Extract a 2-D mask array from Gradio 4.x ImageEditor layer output.
+        """Extract a 2-D mask array from Gradio ImageEditor layer output.
 
         Returns the alpha channel of the first RGBA layer as a uint8 array, or
         None when no valid layer is present.
@@ -870,7 +870,7 @@ def worker():
         if (async_task.current_tab == 'inpaint' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_inpaint)) \
                 and isinstance(async_task.inpaint_input_image, dict):
-            # Support Gradio 4.x ImageEditor format (background/layers/composite)
+            # Support Gradio ImageEditor format (background/layers/composite)
             if 'background' in async_task.inpaint_input_image:
                 inpaint_image = async_task.inpaint_input_image['background']
                 extracted = extract_mask_from_image_editor_layers(async_task.inpaint_input_image.get('layers', []))
@@ -885,7 +885,7 @@ def worker():
             if async_task.inpaint_advanced_masking_checkbox:
                 if isinstance(async_task.inpaint_mask_image_upload, dict):
                     if 'background' in async_task.inpaint_mask_image_upload:
-                        # Gradio 4.x ImageEditor format for mask upload
+                        # Gradio ImageEditor format for mask upload
                         alpha = extract_mask_from_image_editor_layers(
                             async_task.inpaint_mask_image_upload.get('layers', []))
                         if alpha is not None:
