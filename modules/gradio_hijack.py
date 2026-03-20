@@ -80,6 +80,15 @@ class Image(gr.Image):
         # Map the Gradio 3.x source= string to the Gradio 4.x sources= list.
         sources = [source] if source else ["upload"]
 
+        if tool is not None:
+            import warnings
+            warnings.warn(
+                "The 'tool' parameter is deprecated and no longer supported in Gradio 4.x. "
+                "Use gr.ImageEditor for sketch/masking functionality.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         super().__init__(
             value=value,
             height=height,

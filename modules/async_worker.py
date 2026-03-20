@@ -842,6 +842,21 @@ def worker():
         async_task.adm_scaler_end = 0.0
         return current_progress
 
+    def extract_mask_from_image_editor_layers(layers):
+        """Extract a 2-D mask array from Gradio 4.x ImageEditor layer output.
+
+        Returns the alpha channel of the first RGBA layer as a uint8 array, or
+        None when no valid layer is present.
+        """
+        if not layers:
+            return None
+        layer = layers[0]
+        if layer is None or not isinstance(layer, np.ndarray):
+            return None
+        if layer.ndim == 3 and layer.shape[2] == 4:
+            return layer[:, :, 3]
+        return None
+
     def apply_image_input(async_task, base_model_additional_loras, clip_vision_path, controlnet_canny_path,
                           controlnet_cpds_path, goals, inpaint_head_model_path, inpaint_image, inpaint_mask,
                           inpaint_parameterized,  ip_adapter_face_path, ip_adapter_path, ip_negative_path,
@@ -858,13 +873,11 @@ def worker():
             # Support Gradio 4.x ImageEditor format (background/layers/composite)
             if 'background' in async_task.inpaint_input_image:
                 inpaint_image = async_task.inpaint_input_image['background']
-                layers = async_task.inpaint_input_image.get('layers', [])
-                if layers and layers[0] is not None and isinstance(layers[0], np.ndarray) \
-                        and layers[0].ndim == 3 and layers[0].shape[2] == 4:
-                    inpaint_mask = layers[0][:, :, 3]
-                else:
-                    inpaint_mask = np.zeros(inpaint_image.shape[:2], dtype=np.uint8) \
-                        if isinstance(inpaint_image, np.ndarray) else None
+                extracted = extract_mask_from_image_editor_layers(async_task.inpaint_input_image.get('layers', []))
+                inpaint_mask = extracted if extracted is not None else (
+                    np.zeros(inpaint_image.shape[:2], dtype=np.uint8)
+                    if isinstance(inpaint_image, np.ndarray) else None
+                )
             else:
                 inpaint_image = async_task.inpaint_input_image['image']
                 inpaint_mask = async_task.inpaint_input_image['mask'][:, :, 0]
@@ -873,10 +886,9 @@ def worker():
                 if isinstance(async_task.inpaint_mask_image_upload, dict):
                     if 'background' in async_task.inpaint_mask_image_upload:
                         # Gradio 4.x ImageEditor format for mask upload
-                        layers = async_task.inpaint_mask_image_upload.get('layers', [])
-                        if layers and layers[0] is not None and isinstance(layers[0], np.ndarray) \
-                                and layers[0].ndim == 3 and layers[0].shape[2] == 4:
-                            alpha = layers[0][:, :, 3]
+                        alpha = extract_mask_from_image_editor_layers(
+                            async_task.inpaint_mask_image_upload.get('layers', []))
+                        if alpha is not None:
                             async_task.inpaint_mask_image_upload = np.stack([alpha] * 3, axis=2)
                         else:
                             composite = async_task.inpaint_mask_image_upload.get('composite')
