@@ -1,11 +1,11 @@
 # based on https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/v1.6.0/modules/ui_gradio_extensions.py
 
 import os
+
 import gradio as gr
+
 import args_manager
-
 from modules.localization import localization_js
-
 
 GradioTemplateResponseOriginal = gr.routes.templates.TemplateResponse
 
@@ -15,22 +15,22 @@ script_path = os.path.dirname(modules_path)
 
 def webpath(fn):
     if fn.startswith(script_path):
-        web_path = os.path.relpath(fn, script_path).replace('\\', '/')
+        web_path = os.path.relpath(fn, script_path).replace("\\", "/")
     else:
         web_path = os.path.abspath(fn)
 
-    return f'file={web_path}?{os.path.getmtime(fn)}'
+    return f"file={web_path}?{os.path.getmtime(fn)}"
 
 
 def javascript_html():
-    script_js_path = webpath('javascript/script.js')
-    context_menus_js_path = webpath('javascript/contextMenus.js')
-    localization_js_path = webpath('javascript/localization.js')
-    zoom_js_path = webpath('javascript/zoom.js')
-    edit_attention_js_path = webpath('javascript/edit-attention.js')
-    viewer_js_path = webpath('javascript/viewer.js')
-    image_viewer_js_path = webpath('javascript/imageviewer.js')
-    samples_path = webpath(os.path.abspath('./sdxl_styles/samples/fooocus_v2.jpg'))
+    script_js_path = webpath("javascript/script.js")
+    context_menus_js_path = webpath("javascript/contextMenus.js")
+    localization_js_path = webpath("javascript/localization.js")
+    zoom_js_path = webpath("javascript/zoom.js")
+    edit_attention_js_path = webpath("javascript/edit-attention.js")
+    viewer_js_path = webpath("javascript/viewer.js")
+    image_viewer_js_path = webpath("javascript/imageviewer.js")
+    samples_path = webpath(os.path.abspath("./sdxl_styles/samples/fooocus_v2.jpg"))
     head = f'<script type="text/javascript">{localization_js(args_manager.args.language)}</script>\n'
     head += f'<script type="text/javascript" src="{script_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{context_menus_js_path}"></script>\n'
@@ -42,13 +42,13 @@ def javascript_html():
     head += f'<meta name="samples-path" content="{samples_path}">\n'
 
     if args_manager.args.theme:
-        head += f'<script type="text/javascript">set_theme(\"{args_manager.args.theme}\");</script>\n'
+        head += f'<script type="text/javascript">set_theme("{args_manager.args.theme}");</script>\n'
 
     return head
 
 
 def css_html():
-    style_css_path = webpath('css/style.css')
+    style_css_path = webpath("css/style.css")
     head = f'<link rel="stylesheet" property="stylesheet" href="{style_css_path}">'
     return head
 
@@ -58,9 +58,20 @@ def reload_javascript():
     css = css_html()
 
     def template_response(*args, **kwargs):
-        res = GradioTemplateResponseOriginal(*args, **kwargs)
-        res.body = res.body.replace(b'</head>', f'{js}</head>'.encode("utf8"))
-        res.body = res.body.replace(b'</body>', f'{css}</body>'.encode("utf8"))
+        # Gradio 3.41.2 calls TemplateResponse with the old Starlette API: (name, context, ...)
+        # Newer Starlette expects the new API: (request, name, context, ...)
+        # Detect old-style calls where args[0] is a template name string and re-order accordingly.
+        if args and isinstance(args[0], str):
+            name = args[0]
+            context = args[1] if len(args) > 1 else kwargs.pop("context", {})
+            request = context.get("request")
+            res = GradioTemplateResponseOriginal(
+                request, name, context, *args[2:], **kwargs
+            )
+        else:
+            res = GradioTemplateResponseOriginal(*args, **kwargs)
+        res.body = res.body.replace(b"</head>", f"{js}</head>".encode("utf8"))
+        res.body = res.body.replace(b"</body>", f"{css}</body>".encode("utf8"))
         res.init_headers()
         return res
 
